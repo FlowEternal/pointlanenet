@@ -1,0 +1,11 @@
+#dispatch files to site-packages
+recursive-include docs *
+recursive-include vega/evaluate_service *
+recursive-include docs/examples *
+include docs/LICENSE
+include MANIFEST.in
+include docs/README.cn.md
+include docs/README.md
+include docs/RELEASE.md
+include setup.py
+recursive-include vega *

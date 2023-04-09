@@ -1,0 +1,112 @@
+general:
+    backend: pytorch
+
+
+pipeline: [search, retrain]
+
+search:
+    pipe_step:
+        type: TrainPipeStep
+
+    dataset:
+        type: AvazuDataset
+        batch_size: 2000
+        common:
+            data_path: /cache/datasets/Avazu/
+
+    model:
+        model_desc:
+            modules: ["custom"]
+            custom:
+                type: AutoGateModel
+                input_dim: 645195
+                input_dim4lookup: 24
+                embed_dim: 40
+                hidden_dims: [700, 700, 700, 700, 700]
+                dropout_prob: 0.0
+                batch_norm: False
+                layer_norm: True
+                alpha_init_mean: 0.0
+                alpha_activation: 'tanh'
+                selected_pairs: []
+                fis_ratio: 0.3
+
+    trainer:
+        type: Trainer
+        callbacks: AutoGateS1TrainerCallback
+        epochs: 1
+        optimizer:
+            type: Adam
+            params:
+                lr: 0.001
+        lr_scheduler:
+            type: StepLR
+            params:
+                step_size: 1000
+                gamma: 0.75
+        metric:
+            type: auc
+        loss:
+            type: BCEWithLogitsLoss
+
+    evaluator:
+        type: Evaluator
+        host_evaluator:
+            type: HostEvaluator
+            metric:
+                type: auc
+
+
+
+retrain:
+    pipe_step:
+        type: TrainPipeStep
+
+    dataset:
+        type: AvazuDataset
+        batch_size: 2000
+        common:
+            data_path: /cache/datasets/Avazu/
+
+    model:
+        model_desc:
+            modules: ["custom"]
+            custom:
+                input_dim: 645195
+                input_dim4lookup: 24
+                embed_dim: 40
+                hidden_dims: [700, 700, 700, 700, 700]
+                dropout_prob: 0.0
+                batch_norm: False
+                layer_norm: True
+                alpha_init_mean: 0.0
+                alpha_init_radius: 1e-4
+                alpha_activation: 'tanh'
+                selected_pairs: []
+                fis_ratio: 0.3
+                type: AutoGateModel
+    trainer:
+        type: Trainer
+        callbacks: AutoGateS2TrainerCallback
+        epochs: 1
+        optimizer:
+            type: Adam
+            params:
+                lr: 0.001
+        lr_scheduler:
+            type: StepLR
+            params:
+                step_size: 1000
+                gamma: 0.75
+        metric:
+            type: auc
+        loss:
+            type: BCEWithLogitsLoss
+
+    evaluator:
+        type: Evaluator
+        host_evaluator:
+            type: HostEvaluator
+            metric:
+                type: auc
+

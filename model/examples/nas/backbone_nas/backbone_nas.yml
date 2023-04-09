@@ -1,0 +1,86 @@
+general:
+    backend: pytorch  # pytorch | tensorflow | mindspore
+    parallel_search: True
+    parallel_fully_train: True
+
+
+pipeline: [nas, fullytrain]
+
+
+nas:
+    pipe_step:
+        type: SearchPipeStep
+
+    search_algorithm:
+        type: BackboneNas
+        codec: BackboneNasCodec
+        objective_keys: ['accuracy', 'flops']
+        policy:
+            num_mutate: 10
+            random_ratio: 0.2
+        range:
+            max_sample: 100
+            min_sample: 10
+
+    search_space:
+        hyperparameters:
+            -   key: network.backbone.depth
+                type: CATEGORY
+                range: [18, 34, 50]
+            -   key: network.backbone.base_channel
+                type: CATEGORY
+                range:  [32, 48, 56]
+            -   key: network.backbone.doublechannel
+                type: CATEGORY
+                range: [3, 4]
+            -   key: network.backbone.downsample
+                type: CATEGORY
+                range: [3, 4]
+    model:
+        model_desc:
+            modules: ['backbone']
+            backbone:
+                type: ResNet
+                num_class: 10
+
+    trainer:
+        type: Trainer
+        epochs: 1
+        loss:
+            type: CrossEntropyLoss
+
+    dataset:
+        type: Cifar10
+        common:
+            data_path: /cache/datasets/cifar10/
+
+
+fullytrain:
+    pipe_step:
+        type: TrainPipeStep
+        models_folder: "{local_base_path}/output/nas/"
+
+    trainer:
+        ref: nas.trainer
+        epochs: 160
+        optimizer:
+            type: SGD
+            params:
+                lr: 0.1  # 0.001 for mindspore
+                momentum: 0.9
+                weight_decay: 0.0001  # 0.01 for mindspore
+        lr_scheduler:
+            type: MultiStepLR
+            params:
+                milestones: [60, 120]
+                gamma: 0.5
+
+    dataset:
+        ref: nas.dataset
+
+    evaluator:
+        type: Evaluator
+        host_evaluator:
+            type: HostEvaluator
+            metric:
+                type: accuracy

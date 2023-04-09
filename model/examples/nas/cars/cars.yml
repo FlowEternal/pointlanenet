@@ -1,0 +1,173 @@
+general:
+    backend: pytorch  # pytorch
+
+
+pipeline: [nas, fully_train]
+
+
+nas:
+    pipe_step:
+        type: SearchPipeStep
+
+    dataset:
+        type: Cifar10
+        common:
+            data_path: /home/zhandongxu/Code/AutoDL/dataset/cifar.python
+            train_portion: 0.5
+            num_workers: 8
+            drop_last: False
+        train:
+            shuffle: True
+            batch_size: 128
+        val:
+            batch_size: 3500
+
+    search_algorithm:
+        type: CARSAlgorithm
+        policy:
+            num_individual: 8
+            start_ga_epoch: 50
+            ga_interval: 10
+            select_method: uniform
+            warmup: 50
+
+    search_space:
+        type: SearchSpace
+        modules: ['super_network']
+        super_network:
+            type: CARSDartsNetwork
+            stem:
+                type: PreOneStem
+                init_channels: 16
+                stem_multi: 3
+            head:
+                type: LinearClassificationHead
+            init_channels: 16
+            num_classes: 10
+            auxiliary: False
+            search: True
+            cells:
+                modules: [
+                    'normal', 'normal', 'reduce',
+                    'normal', 'normal', 'reduce',
+                    'normal', 'normal'
+                ]
+                normal:
+                    type: NormalCell
+                    steps: 4
+                    genotype:
+                      [
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 2, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 2, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 3 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 3 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 4 ],
+                      ]
+                    concat: [2, 3, 4, 5]
+                reduce:
+                    type: ReduceCell
+                    steps: 4
+                    genotype:
+                      [
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 2, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 2, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 3, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 4, 3 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 0 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 1 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 2 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 3 ],
+                      [ ['none', 'max_pool_3x3', 'avg_pool_3x3', 'skip_connect', 'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3', 'dil_conv_5x5'], 5, 4 ],
+                      ]
+                    concat: [2, 3, 4, 5]
+
+    trainer:
+        type: Trainer
+        darts_template_file: "{default_darts_cifar10_template}"
+        callbacks: CARSTrainerCallback
+        epochs: 500
+        optimizer:
+            type: SGD
+            params:
+                lr: 0.025
+                momentum: 0.9
+                weight_decay: !!float 3e-4
+        lr_scheduler:
+            type: CosineAnnealingLR
+            params:
+                T_max: 500
+                eta_min: 0.001
+        grad_clip: 5.0
+        seed: 10
+        unrolled: True
+        loss:
+            type: CrossEntropyLoss
+
+
+fully_train:
+    pipe_step:
+        type: TrainPipeStep
+        models_folder: "{local_base_path}/output/nas/"
+    trainer:
+        ref: nas.trainer
+        epochs: 600
+        lr_scheduler:
+            type: CosineAnnealingLR
+            params:
+                T_max: 600.0
+                eta_min: 0
+        loss:
+            type: MixAuxiliaryLoss
+            params:
+                loss_base:
+                    type: CrossEntropyLoss
+                aux_weight: 0.4
+        seed: 100
+        drop_path_prob: 0.2
+    evaluator:
+        type: Evaluator
+        host_evaluator:
+            type: HostEvaluator
+            metric:
+                type: accuracy
+    dataset:
+        ref: nas.dataset
+        common:
+            train_portion: 1.0
+        train:
+            batch_size: 96
+            shuffle: True
+            transforms:
+                -   type: RandomCrop
+                    size: 32
+                    padding: 4
+                -   type: RandomHorizontalFlip
+                -   type: ToTensor
+                -   type: Normalize
+                    mean:
+                        - 0.49139968
+                        - 0.48215827
+                        - 0.44653124
+                    std:
+                        - 0.24703233
+                        - 0.24348505
+                        - 0.26158768
+                -   type: Cutout
+                    length: 8 # pipeline scale this number to 8*20/10
+        val:
+            batch_size: 96
+            shuffle: False

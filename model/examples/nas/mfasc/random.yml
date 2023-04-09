@@ -1,0 +1,84 @@
+general:
+    backend: pytorch 
+
+pipeline: [nas]
+
+nas:
+    pipe_step:
+        type: SearchPipeStep
+        alias: 'random'
+
+    dataset:
+        type: Cifar10
+        common:
+            num_workers: 0
+            data_path: "/cache/datasets/cifar10/"
+            download: True
+            train_portion: 0.05
+        train:
+            batch_size: 64
+            cutout_length: 16
+        test:
+            batch_size: 2048
+
+    search_algorithm:
+        type: RandomSearch
+        policy:
+            num_sample: 16
+
+    search_space:
+        type: SearchSpace
+        hyperparameters:
+            -   key: network.custom.layer_0.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_0.channels
+                type: CATEGORY
+                range: [16, 24]
+            -   key: network.custom.layer_1.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_1.channels
+                type: CATEGORY
+                range: [24, 32]
+            -   key: network.custom.layer_2.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_2.channels
+                type: CATEGORY
+                range: [32, 64]
+            -   key: network.custom.layer_3.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_3.channels
+                type: CATEGORY
+                range: [64, 96]
+            -   key: network.custom.layer_4.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_4.channels
+                type: CATEGORY
+                range: [96, 160]
+            -   key: network.custom.layer_5.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_5.channels
+                type: CATEGORY
+                range: [160, 320]
+            -   key: network.custom.layer_6.repetitions
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.custom.layer_6.channels
+                type: CATEGORY
+                range: [320, 640]
+
+    model:
+        model_desc:
+            modules: ["custom"]
+            custom:
+                type: MobileNetV2
+                num_class: 10
+
+    trainer:
+        type: Trainer
+        epochs: 1

@@ -1,0 +1,111 @@
+general:
+    backend: pytorch
+    parallel_fully_train: False
+    devices_per_trainer: 1
+    requires: ["intervaltree", "ujson", "PrettyTable"]
+
+pipeline: [fully_train]
+
+fully_train:
+
+    pipe_step:
+        type: TrainPipeStep
+
+    model:
+#        model_desc_file: "models/archs/lane_resnet34_cls.json"     # resnet34 backbone
+#        pretrained_model_file: "models/trained_lane/lane_resnet34_reg_epoch50.pth" # resnet pretrain model
+
+#        model_desc_file: "models/archs/lane_csp_cls.json"           # yolo csp backbone
+#        pretrained_model_file: "models/trained_lane/lane_csp_reg_epoch50.pth" # yolo pretrain model
+
+        model_desc_file: "models/archs/lane_nas_reg.json"     # nas backbone
+
+    dataset:
+        type: AutoLaneDataset
+        common:
+            data_path: data                                         # server 6523
+            list_name: "list_exp"                                   # train image list folder name
+            data_amount: &data_amount 140                           # train image number
+            batch_size: &batch_size 4                               # batch size
+            num_workers: 0                                          # worker
+            train_seg: False                                        # wheather train seg
+            train_detect: False                                     # wheather train detection
+            train_lane_with_type: True                              # train lane detector with type
+            lane_cls_num: 9
+
+            network_input_width: 512    # input tensor width
+            network_input_height: 288   # input tensor hegiht
+            interval: 4                 # baseline distance
+
+            # not frequently changed
+            do_split: False
+            scale_invariance: True      # scale invariance detector
+            use_interpolation: True     # wheather always set start pos equal 0
+            anchor_stride: 16           # anchor distance default 16
+            num_class: 2                # lane class 2
+
+            dataset_format: CurveLane
+            train_own: True             # wheather use own dataset for lane
+            do_flip: False              # wheather flip upside down
+            drop_last: False            # drop last default false
+
+        train:
+            with_aug: True
+            shuffle: True
+            random_sample: True
+        valid:
+            shuffle: False
+        test:
+            shuffle: False
+
+    trainer:
+        type: Trainer
+        epochs: &epochs 10
+        with_valid: True
+        valid_interval: 1
+        train_lane: True
+
+        distributed: False
+        load_checkpoint: True
+        save_checkpoint: True
+        report_freq: 50
+        is_detection_trainer: True
+        callbacks: ['AutoLaneTrainerCallback','DetectionMetricsEvaluator','DetectionProgressLogger']
+
+        optimizer:
+            type: SGD
+            adjust_lane_type: True # adjust lane type
+            adjust_lr_ratio_to_base: 0.1 #  adjust_lr_ratio_to_base * optimizer.params.lr
+            params:
+                lr: 0.02
+                momentum: 0.9
+                weight_decay: 0.00001
+
+        lr_scheduler:
+            type: WarmupScheduler
+            by_epoch: False
+            params:
+                warmup_type: linear
+                warmup_iters: &warmup_iters 50
+                warmup_ratio: 0.1
+                after_scheduler_config:
+                    by_epoch: False
+                    type: CosineAnnealingLR
+                    params:
+                        # int(data_total_num / batch_size) * epoch - warmup_iters
+                        batch_size: *batch_size
+                        total_num: *data_amount
+                        epochs: *epochs
+                        warmup_iters: *warmup_iters
+                        T_max: 0    # automatic calculated
+
+        metric:
+            type: LaneMetric
+            params:
+                method: f1_measure
+                eval_width: 2560
+                eval_height: 1440
+                iou_thresh: 0.5
+                lane_width: 30
+                thresh_list:  [0.50]
+

@@ -1,0 +1,103 @@
+general:
+    backend: pytorch
+    parallel_fully_train: True # wheather train parellel
+    devices_per_trainer: 2      # number of gpu to use
+    requires: ["intervaltree", "ujson", "PrettyTable"]
+
+pipeline: [fully_train]
+
+fully_train:
+    pipe_step:
+        type: TrainPipeStep
+    model:
+        model_desc_file: "models/archs/mt.json"
+#        pretrained_model_file: "models/trained_mt/mt_resnet34_second_epoch70.pth"   # second round
+
+    dataset:
+        type: AutoLaneDataset
+        common:
+            data_path: /data_2/zhandongxu/MULTITASK               # server 6523
+            list_name: "list"                                       # train regression model
+            data_amount: &data_amount 14095                          # train image number
+            batch_size: &batch_size 128                              # batch size
+            num_workers: 32                                         # worker
+            train_seg: True                                         # wheather train seg
+            train_detect: True                                      # wheather train detection
+            train_lane_with_type: False                             # train lane detector with type
+            lane_cls_num: 9
+
+            network_input_width: 512    # input tensor width
+            network_input_height: 288   # input tensor hegiht
+            interval: 4                 # baseline distance
+
+            # 这些配置不会常更改
+            do_split: False
+            scale_invariance: True      # scale invariance detector
+            use_interpolation: True     # wheather always set start pos equal 0
+            anchor_stride: 16           # anchor distance default 16
+            num_class: 2                # lane class 2
+
+            dataset_format: CurveLane
+            train_own: True             # wheather use own dataset for lane
+            do_flip: False              # wheather flip upside down
+            drop_last: False            # drop last default false
+
+        train:
+            with_aug: True
+            shuffle: True
+            random_sample: True
+        valid:
+            shuffle: False
+        test:
+            shuffle: False
+
+    trainer:
+        type: Trainer
+        epochs: &epochs 100
+        with_valid: True
+        valid_interval: 10
+        train_lane: True
+
+        distributed: False
+        load_checkpoint: True
+        save_checkpoint: True
+        report_freq: 50
+        is_detection_trainer: True
+        callbacks: ['AutoLaneTrainerCallback','DetectionMetricsEvaluator','DetectionProgressLogger']
+
+        optimizer:
+            type: SGD
+            adjust_lane_type: False # 调整车道线类别分支 -- 多任务训练时候这里意思变为冻结骨干网络 --注意修改optim文件
+            adjust_lr_ratio_to_base: 0.001 # 其余学习率 = adjust_lr_ratio_to_base * optimizer.params.lr
+            params:
+                lr: 0.0001
+                momentum: 0.9
+                weight_decay: 0.00001
+
+        lr_scheduler:
+            type: WarmupScheduler
+            by_epoch: False
+            params:
+                warmup_type: linear
+                warmup_iters: &warmup_iters 10
+                warmup_ratio: 0.1
+                after_scheduler_config:
+                    by_epoch: False
+                    type: CosineAnnealingLR
+                    params:
+                        # int(data_total_num / batch_size) * epoch - warmup_iters
+                        batch_size: *batch_size
+                        total_num: *data_amount
+                        epochs: *epochs
+                        warmup_iters: *warmup_iters
+                        T_max: 0    # 这个自动计算出来 这里不用管
+
+        metric:
+            type: LaneMetric
+            params:
+                method: f1_measure
+                eval_width: 2560
+                eval_height: 1440
+                iou_thresh: 0.5
+                lane_width: 30
+                thresh_list:  [0.50]

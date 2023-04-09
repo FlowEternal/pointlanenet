@@ -1,0 +1,111 @@
+pipeline: [serial, parallel, fullytrain]
+
+serial:
+    pipe_step:
+        type: SearchPipeStep
+
+    search_algorithm:
+        type: SpNasS
+        max_sample: 20
+        objective_keys: AP50
+
+    search_space:
+        type: SearchSpace
+        hyperparameters:
+            -   key: network.backbone.code
+                type: CATEGORY
+                range: ['111-2111-211111-211']
+
+    model:
+        model_desc:
+            type: FasterRCNN
+            backbone:
+                type: SerialBackbone
+                weight_file: /cache/models/fasterrcnn_serialnet_backbone.pth
+            neck:
+                type: ParallelFPN
+            num_classes: 91
+
+    trainer:
+        type: Trainer
+        epochs: 6
+        get_train_metric_after_epoch: False
+        model_statistics: False
+        is_detection_trainer: True
+        perfs_cmp_key: AP50
+        optimizer:
+            type: SGD
+            params:
+                lr: 0.03
+                momentum: 0.9
+                weight_decay: !!float 1e-4
+        lr_scheduler:
+            type: WarmupScheduler
+            by_epoch: False
+            params:
+                warmup_type: linear
+                warmup_iters: 2000
+                warmup_ratio: 0.001
+                after_scheduler_config:
+                    type: MultiStepLR
+                    by_epoch: True
+                    params:
+                        milestones:  [10, 20]
+                        gamma: 0.1
+        loss:
+            type: SumLoss
+        metric:
+            type: coco
+            params:
+                anno_path: /cache/datasets/COCO2017/annotations/instances_val2017.json
+
+    dataset:
+        type: CocoDataset
+        common:
+            data_root: /cache/datasets/COCO2017
+            batch_size: 4
+            img_prefix: "2017"
+            ann_prefix: instances
+
+parallel:
+    pipe_step:
+        type: SearchPipeStep
+        models_folder: "{local_base_path}/output/serial/"
+        pretrained_folder: "{local_base_path}/output/serial/"
+
+    search_algorithm:
+        type: SpNasP
+
+    search_space:
+        type: SearchSpace
+        hyperparameters:
+            -   key: network.neck.code
+                type: CATEGORY
+                range: [[0, 1, 2, 3]]
+
+    model:
+        head: ["backbone.fpn", "roi_heads"]
+        model_desc:
+            type: FasterRCNN
+            neck:
+                type: ParallelFPN
+            num_classes: 91
+
+    trainer:
+        ref: serial.trainer
+
+    dataset:
+        ref: serial.dataset
+
+fullytrain:
+    pipe_step:
+        type: TrainPipeStep
+        models_folder: "{local_base_path}/output/parallel/"
+        pretrained_folder: "{local_base_path}/output/parallel/"
+
+    trainer:
+        ref: serial.trainer
+        epochs: 24
+
+    dataset:
+        ref: serial.dataset

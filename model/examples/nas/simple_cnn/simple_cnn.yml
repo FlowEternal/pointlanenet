@@ -1,0 +1,34 @@
+general:
+    backend: pytorch   #pytorch | tensorflow | mindspore
+
+pipeline: [nas]
+
+nas:
+    pipe_step:
+        type: SearchPipeStep
+    search_algorithm:
+        type: RandomSearch
+        policy:
+            num_sample: 50
+    search_space:
+        hyperparameters:
+            -   key: network.backbone.blocks
+                type: CATEGORY
+                range: [1, 2, 3, 4]
+            -   key: network.backbone.channels
+                type: CATEGORY
+                range:  [32, 48, 56, 64]
+    model:
+        model_desc:
+            modules: [backbone]
+            backbone:
+                type: SimpleCnn
+                num_class: 10
+                fp16: False
+    trainer:
+        type: Trainer
+        epochs: 3
+    dataset:
+        type: Cifar10
+        common:
+            data_path: /cache/datasets/cifar10/

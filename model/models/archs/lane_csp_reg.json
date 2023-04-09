@@ -1,0 +1,88 @@
+{
+"modules": ["detector"],
+
+"detector": 
+{
+"type": "AutoLaneDetector",
+
+"desc":
+{
+"modules": ["backbone", "neck", "head"],
+"num_class": 2, 
+"method": "random", 
+"code": "x18(2x24d)_48_111111111-11111211111121-11-112+122-022",
+
+"backbone":
+{
+"type": "ResNeXtVariantDet",
+"arch": "111111111-11111211111121-11-112", 
+"base_depth": 18, 
+"base_channel": 48, 
+"groups": 2, 
+"base_width": 24, 
+"num_stages": 4, 
+"strides": [1, 2, 2, 2], 
+"dilations": [1, 1, 1, 1], 
+"out_indices": [0, 1, 2, 3], 
+"frozen_stages": -1, 
+"zero_init_residual": false, 
+"norm_cfg": {"type": "BN", "requires_grad": true}, 
+"conv_cfg": {"type": "Conv"}, 
+"out_channels": [48, 192, 192, 384],
+"style": "pytorch"
+}, 
+
+"neck":
+{
+"arch_code": "122-022", 
+"type": "FeatureFusionModule", 
+"in_channels": [48, 192, 192, 384]
+},
+
+"head":
+{
+"base_channel": 448,
+"num_classes": 2,
+"type": "AutoLaneHead",
+"input_size": {"width": 512, "height": 288,"anchor_stride": 16,"interval": 4},
+"scale_invariance": true,
+"weight_cls": 1.0,
+"weight_reg": 1.0,
+"use_focal": false,
+"do_classify": false,
+"weight_classify": 10.0,
+"lane_class_weight_positive": [1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],
+"lane_class_list": ["line-special","line-single-solid-white","line-single-solid-yellow","line-single-dash-white","line-single-dash-yellow",
+"line-double-solid-white","line-double-solid-yellow","line-double-dash-white","line-double-dash-yellow"]
+},
+
+"head_detect":
+{
+"do_detection": false,
+"detect_class_list": ["__background__", "roadtext","pedestrian","guidearrow","traffic","obstacle","vehicle_wheel","roadsign","vehicle","vehicle_light"],
+"type": "DetDecoder",
+"weight_cls": 10.0,
+"weight_reg": 1.0
+},
+
+"head_seg":
+{
+"do_seg": false,
+"out_channels": [24, 96, 96, 192],
+"seg_class_list": ["__background__","pedestrian_area","self_area","obstacle_area","road_area","marking_area","vehicle_area","curb_area"],
+"type": "SegDecoder",
+"weight": 1.0
+},
+
+"limits": {"GFlops": 1},
+"epoch": 50,
+"iter_epoch": 130,
+"backbone_resnet": false,
+"backbone_yolo": true,
+"init_lane": false,
+"dynamic_weight": false
+}
+
+}
+
+}
