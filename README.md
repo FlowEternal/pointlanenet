@@ -1,13 +1,7 @@
-# Multitask Mono Camera Perception - Ultranet
+# Pointlanenet model training / inference / deploy in onnxruntime
 ## Introduction
-This is my previous work on multitask perception in Forward Camera Settings\
-This work further extend the hydranet to compromise three headers to improve its performance
-
-It mainly contains three tasks:  
-(1) object detection (instead of anchor based in hydranet, now this is anchor-free based on centerpoint detection)  
-(2) semantic segmentation (almost the same as hydranet)  
-(3) lane detection (instead of anchor line based, now this is pure point based lane detection like PINet)
-
+This is my previous work on pointlane detection using pointlanenet  
+This repo includes bothing model training and model inference in python and c++
  ![](assets/demo.jpg)
 
 ## How to Run
